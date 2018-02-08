@@ -72,7 +72,7 @@ func selectFromTwo(mainChannel <-chan int, worker1, worker2 chan<- int) {
 }
 ```
 
-This works but without blocking unless both of them are busy, but that's all right until all the workers can run and none of them wait.
+This works without blocking unless both of them are busy, but that's all right until all the workers can run and none of them wait.
 
 But how do you solve this for n workers?
 
