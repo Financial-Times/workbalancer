@@ -92,7 +92,7 @@ func TestNoWorker_Ok(t *testing.T) {
 	case <-timer.C:
 		return
 	case <-wg:
-		assert.Equal(t, actualResults, 0, "Results should be 0 because there are no workers.")
+		assert.Equal(t, actualResults, 0, "Result should be 0 because there are no workers.")
 		balancer.Balance(workloads)
 		t.Fatalf("Shouldn't end here as there are no workers to process work, hence no results.")
 
@@ -134,7 +134,7 @@ type incWork struct {
 	i int
 }
 
-func (w *incWork) Do() WorkResult {
+func (w *incWork) Do() Result {
 	return w.i + 1
 }
 
@@ -142,7 +142,7 @@ type timeWork struct {
 	t time.Duration
 }
 
-func (w *timeWork) Do() WorkResult {
+func (w *timeWork) Do() Result {
 	time.Sleep(w.t)
 	return true
 }

@@ -4,44 +4,37 @@ import (
 	"sync"
 )
 
-type channelWorker struct {
-	workloads       chan Workload
-	workResults     chan<- WorkResult
-	workerAvailable chan<- *channelWorker
-	wg              *sync.WaitGroup
+type worker struct {
+	workloads        chan Workload
+	results          chan<- Result
+	availableWorkers chan<- *worker
+	wg               *sync.WaitGroup
 }
 
-func newChannelWorker(workerAvailable chan<- *channelWorker, workResults chan<- WorkResult, wg *sync.WaitGroup) *channelWorker {
-	worker := &channelWorker{
-		workloads:       make(chan Workload, 1),
-		workResults:     workResults,
-		workerAvailable: workerAvailable,
-		wg:              wg,
+func newWorker(availableWorkers chan<- *worker, results chan<- Result, wg *sync.WaitGroup) *worker {
+	worker := &worker{
+		workloads:        make(chan Workload, 1),
+		results:          results,
+		availableWorkers: availableWorkers,
+		wg:               wg,
 	}
 	go worker.work()
-	worker.workerAvailable <- worker
+	worker.availableWorkers <- worker
 	return worker
 }
 
-func (w *channelWorker) addWork(workload Workload) {
+func (w *worker) addWork(workload Workload) {
 	w.workloads <- workload
 }
 
-func (w *channelWorker) work() {
-	for {
-		workload, more := <-w.workloads
-		// log.Infof("worker here, got workload=%v more=%v", workload, more)
-		if !more {
-			// log.Infof("worker calling w.wg.Done()")
-			w.wg.Done()
-			break
-		}
-		w.workResults <- workload.Do()
-		// log.Infof("worker here, done with workload=%v", workload)
-		w.workerAvailable <- w
+func (w *worker) work() {
+	for workload := range w.workloads {
+		w.results <- workload.Do()
+		w.availableWorkers <- w
 	}
+	w.wg.Done()
 }
 
-func (w *channelWorker) close() {
+func (w *worker) close() {
 	close(w.workloads)
 }

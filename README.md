@@ -23,7 +23,7 @@ type sleepyWork struct {
 	t time.Duration
 }
 
-func (w *sleepyWork) Do() workbalancer.WorkResult {
+func (w *sleepyWork) Do() workbalancer.Result {
 	time.Sleep(w.t)
 	return w.t
 }
