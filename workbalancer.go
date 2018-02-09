@@ -4,57 +4,55 @@ import (
 	"sync"
 )
 
-type Workbalancer interface {
+type WorkBalancer interface {
 	Balance(workloads []Workload)
-	GetResults() <-chan WorkResult
+	GetResults() <-chan Result
 }
 
 type channelBalancer struct {
-	workerAvailable chan *channelWorker
-	workResults     chan WorkResult
-	workers         []*channelWorker
-	wg              *sync.WaitGroup
+	availableWorkers chan *worker
+	results          chan Result
+	workers          []*worker
+	wg               *sync.WaitGroup
 }
 
-func NewChannelBalancer(nWorkers int) Workbalancer {
-	workerAvailable := make(chan *channelWorker, nWorkers)
-	workResults := make(chan WorkResult, nWorkers)
-	workers := []*channelWorker{}
+func NewChannelBalancer(nWorkers int) WorkBalancer {
+	availableWorkers := make(chan *worker, nWorkers)
+	results := make(chan Result, nWorkers)
+	var workers []*worker
 	wg := &sync.WaitGroup{}
 	wg.Add(nWorkers)
 	for i := 0; i < nWorkers; i++ {
-		worker := newChannelWorker(workerAvailable, workResults, wg)
+		worker := newWorker(availableWorkers, results, wg)
 		workers = append(workers, worker)
 	}
 	return &channelBalancer{
-		workerAvailable: workerAvailable,
-		workResults:     workResults,
-		workers:         workers,
-		wg:              wg,
+		availableWorkers: availableWorkers,
+		results:          results,
+		workers:          workers,
+		wg:               wg,
 	}
 }
 
 type Workload interface {
-	Do() WorkResult
+	Do() Result
 }
 
-type WorkResult interface {
+type Result interface {
 }
 
 func (b *channelBalancer) Balance(workloads []Workload) {
 	for _, workload := range workloads {
-		// log.Infof("at workload %v", workload)
-		worker := <-b.workerAvailable
-		// log.Infof("worker became available")
+		worker := <-b.availableWorkers
 		worker.addWork(workload)
 	}
 	for _, worker := range b.workers {
 		worker.close()
 	}
 	b.wg.Wait()
-	close(b.workResults)
+	close(b.results)
 }
 
-func (b *channelBalancer) GetResults() <-chan WorkResult {
-	return b.workResults
+func (b *channelBalancer) GetResults() <-chan Result {
+	return b.results
 }
