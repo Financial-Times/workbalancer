@@ -1,5 +1,7 @@
 # workbalancer
 
+NOTE:  This lib is used by https://github.com/Financial-Times/publish-failure-resolver-go
+
 Balances an array of workload into multiple goroutines.
 
 For example if you have 100 operations to do, you can divide that to be done by 4 goroutines without fixing it to 25-25-25-25 static parts. The workers will take up work as they finish with current ones and none of the workers are waiting/blocking for the others to finish.
